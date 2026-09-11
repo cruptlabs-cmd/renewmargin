@@ -1,0 +1,6 @@
+agreement_id,customer,annual_price,labor_hours,labor_rate,material_cost,other_cost
+RM-1001,Johnson Residence,219,2.8,48,42,20
+RM-1002,Martinez Residence,299,2.1,48,36,15
+RM-1003,Pine Street Dental,599,5.4,48,148,40
+RM-1004,Oak Ridge Offices,899,7.1,48,162,55
+RM-1005,Thompson Residence,249,1.9,48,31,12
