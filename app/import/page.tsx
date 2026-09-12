@@ -2,23 +2,8 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { numberValue, parseCsv, type CsvRow } from '../../lib/csv';
-
-const aliases: Record<string, string[]> = {
-  customer: ['customer','customer_name','name'],
-  current_price: ['current_price','annual_price','price','agreement_price'],
-  labor_hours: ['labor_hours','hours','service_hours'],
-  loaded_hourly_cost: ['loaded_hourly_cost','hourly_cost','labor_rate'],
-  material_cost: ['material_cost','materials','parts_cost'],
-  visit_overhead: ['visit_overhead','overhead','travel_cost'],
-  renewal_date: ['renewal_date','expires','expiration_date']
-};
-
-function find(row: CsvRow, field: string) {
-  const keys = Object.keys(row);
-  const actual = keys.find(k => aliases[field].includes(k.trim().toLowerCase()));
-  return actual ? row[actual] : '';
-}
+import { parseCsv, type CsvRow } from '../../lib/csv';
+import { analyzeCsvRows } from '../../lib/scan';
 
 function csvEscape(value: string | number) {
   const text = String(value);
@@ -31,35 +16,19 @@ export default function ImportPage() {
   const [targetMargin, setTargetMargin] = useState(40);
   const [error, setError] = useState('');
 
-  const analysis = useMemo(() => rows.map((row, index) => {
-    const current = numberValue(find(row, 'current_price'));
-    const laborHours = numberValue(find(row, 'labor_hours'));
-    const hourlyCost = numberValue(find(row, 'loaded_hourly_cost'));
-    const materialCost = numberValue(find(row, 'material_cost'));
-    const overhead = numberValue(find(row, 'visit_overhead'));
-    const cost = laborHours * hourlyCost + materialCost + overhead;
-    const margin = current > 0 ? ((current - cost) / current) * 100 : 0;
-    const recommended = targetMargin < 100 ? cost / (1 - targetMargin / 100) : cost;
-    return {
-      id: index,
-      customer: find(row, 'customer') || `Agreement ${index + 1}`,
-      current,
-      cost,
-      margin,
-      recommended,
-      upside: Math.max(0, recommended - current),
-      renewal: find(row, 'renewal_date'),
-      valid: current > 0 && cost >= 0
-    };
-  }), [rows, targetMargin]);
-
-  const sorted = useMemo(() => [...analysis].sort((a,b) => a.margin-b.margin), [analysis]);
+  const analysis = useMemo(() => analyzeCsvRows(rows, targetMargin), [rows, targetMargin]);
+  const sorted = useMemo(() => [...analysis].sort((a,b) => {
+    if (a.valid !== b.valid) return a.valid ? -1 : 1;
+    return a.margin - b.margin;
+  }), [analysis]);
+  const validRows = useMemo(() => analysis.filter(a => a.valid), [analysis]);
   const summary = useMemo(() => ({
-    atRisk: analysis.filter(a => a.valid && a.margin < targetMargin).length,
-    currentRevenue: analysis.reduce((sum,a) => sum + a.current, 0),
-    serviceCost: analysis.reduce((sum,a) => sum + a.cost, 0),
-    potentialUpside: analysis.filter(a => a.valid && a.margin < targetMargin).reduce((sum,a) => sum + a.upside, 0)
-  }), [analysis, targetMargin]);
+    atRisk: validRows.filter(a => a.margin < targetMargin).length,
+    incomplete: analysis.length - validRows.length,
+    currentRevenue: validRows.reduce((sum,a) => sum + a.current, 0),
+    serviceCost: validRows.reduce((sum,a) => sum + a.cost, 0),
+    potentialUpside: validRows.filter(a => a.margin < targetMargin).reduce((sum,a) => sum + a.upside, 0)
+  }), [analysis, validRows, targetMargin]);
 
   async function load(file?: File) {
     if (!file) return;
@@ -75,8 +44,17 @@ export default function ImportPage() {
   }
 
   function downloadResults() {
-    const header = ['customer','current_price','actual_service_cost','current_margin_percent','recommended_renewal_price','potential_annual_recovery','renewal_date'];
-    const lines = sorted.map(a => [a.customer,a.current.toFixed(2),a.cost.toFixed(2),a.margin.toFixed(2),a.recommended.toFixed(2),a.upside.toFixed(2),a.renewal].map(csvEscape).join(','));
+    const header = ['customer','current_price','actual_service_cost','current_margin_percent','recommended_renewal_price','potential_annual_recovery','renewal_date','status'];
+    const lines = sorted.map(a => [
+      a.customer,
+      a.current.toFixed(2),
+      a.valid ? a.cost.toFixed(2) : '',
+      a.valid ? a.margin.toFixed(2) : '',
+      a.valid ? a.recommended.toFixed(2) : '',
+      a.valid ? a.upside.toFixed(2) : '',
+      a.renewal,
+      a.valid ? 'ready' : `missing: ${a.missing.join('; ')}`
+    ].map(csvEscape).join(','));
     const blob = new Blob([[header.join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -121,16 +99,16 @@ export default function ImportPage() {
         <article><span>Potential annual margin recovery</span><strong>${summary.potentialUpside.toFixed(0)}</strong></article>
         <article><span>Agreements below target</span><strong>{summary.atRisk}</strong></article>
         <article><span>Current annual revenue</span><strong>${summary.currentRevenue.toFixed(0)}</strong></article>
-        <article><span>Calculated service cost</span><strong>${summary.serviceCost.toFixed(0)}</strong></article>
+        <article><span>Rows needing data</span><strong>{summary.incomplete}</strong></article>
       </section>
       <section className="panel">
-        <div className="panelHead"><div><h2>Results</h2><p>Lowest-margin agreements are shown first.</p></div><button type="button" onClick={downloadResults}>Export repricing CSV</button></div>
+        <div className="panelHead"><div><h2>Results</h2><p>Only complete rows are included in totals and repricing recommendations.</p></div><button type="button" onClick={downloadResults}>Export repricing CSV</button></div>
         <div className="table importTable">
           <div className="tableHead"><strong>Agreement</strong><strong>Current</strong><strong>Cost</strong><strong>Margin</strong><strong>Suggested renewal</strong></div>
           {sorted.map(item => <div className="tableRow" key={item.id}>
-            <div><strong>{item.customer}</strong><small>{item.renewal || 'Renewal date unavailable'}</small></div>
-            <span>${item.current.toFixed(0)}</span><span>${item.cost.toFixed(0)}</span>
-            <span className={item.valid && item.margin < targetMargin ? 'bad' : 'good'}>{item.valid ? `${item.margin.toFixed(1)}%` : 'Needs data'}</span>
+            <div><strong>{item.customer}</strong><small>{item.valid ? (item.renewal || 'Renewal date unavailable') : `Missing: ${item.missing.join(', ')}`}</small></div>
+            <span>{item.current > 0 ? `$${item.current.toFixed(0)}` : '—'}</span><span>{item.valid ? `$${item.cost.toFixed(0)}` : '—'}</span>
+            <span className={item.valid && item.margin < targetMargin ? 'bad' : item.valid ? 'good' : ''}>{item.valid ? `${item.margin.toFixed(1)}%` : 'Needs data'}</span>
             <strong>{item.valid ? `$${item.recommended.toFixed(0)}` : '—'}</strong>
           </div>)}
         </div>
