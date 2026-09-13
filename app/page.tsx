@@ -7,7 +7,7 @@ const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD
 export default function Home() {
   const report = analyzePortfolio(demoAgreements, 0.4);
   return <main className="shell">
-    <header><div><span className="eyebrow">RENEWMARGIN</span><h1>Know which service agreements are quietly losing money.</h1><p>Turn actual labor and material costs into profitable renewal prices—before the next renewal.</p></div><Link className="button" href="/import">Import agreements</Link></header>
+    <header><div><span className="eyebrow">RENEWMARGIN</span><h1>Know which service agreements are quietly losing money.</h1><p>Turn actual labor and material costs into profitable renewal prices—before the next renewal.</p></div><Link className="button" href="/history">Analyze service history</Link></header>
     <section className="metrics">
       <article><span>Potential annual margin recovery</span><strong>{money.format(report.potentialUpside)}</strong></article>
       <article><span>Agreements needing repricing</span><strong>{report.needsRepricing}</strong></article>
@@ -18,6 +18,6 @@ export default function Home() {
       <div className="table"><div className="row heading"><span>Customer</span><span>Current</span><span>Actual cost</span><span>Margin</span><span>Suggested</span><span>Action</span></div>
       {report.agreements.map(a => <div className="row" key={a.id}><span><b>{a.customer}</b><small>{a.id}</small></span><span>{money.format(a.annualPrice)}</span><span>{money.format(a.actualCost)}</span><span className={a.status}>{(a.grossMargin*100).toFixed(1)}%</span><span><b>{money.format(a.recommendedPrice)}</b></span><span className={`pill ${a.status}`}>{a.status === "reprice" ? "Reprice" : a.status === "watch" ? "Review" : "Healthy"}</span></div>)}</div>
     </section>
-    <section className="callout"><div><span className="eyebrow">FREE MARGIN LEAK SCAN</span><h2>Upload your agreement export. See the dollars before you buy anything.</h2></div><Link className="button" href="/import">Run a free scan</Link></section>
+    <section className="callout"><div><span className="eyebrow">ACTUAL-COST REPRICING</span><h2>Use completed service history to see what every agreement should renew for.</h2><p>Already have labor and material totals? Use the <Link href="/import">single-file quick scan</Link>.</p></div><Link className="button" href="/history">Match service history</Link></section>
   </main>;
 }
