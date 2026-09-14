@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { parseCsv, type CsvRow } from '../../lib/csv';
 import { analyzeAgreementHistory } from '../../lib/history';
+import { saveHistoryScan } from '../../lib/saved-scans';
 
 export default function HistoryPage() {
   const [agreements, setAgreements] = useState<CsvRow[]>([]);
@@ -12,6 +13,7 @@ export default function HistoryPage() {
   const [visitFile, setVisitFile] = useState('');
   const [hourlyCost, setHourlyCost] = useState(52);
   const [targetMargin, setTargetMargin] = useState(40);
+  const [savedMessage, setSavedMessage] = useState('');
 
   const results = useMemo(() => {
     if (!agreements.length || !visits.length) return [];
@@ -23,6 +25,20 @@ export default function HistoryPage() {
     if (!file) return;
     setter(parseCsv(await file.text()));
     nameSetter(file.name);
+    setSavedMessage('');
+  }
+
+  function saveScan() {
+    if (!results.length) return;
+    const saved = saveHistoryScan({
+      name: `Margin scan · ${new Date().toLocaleDateString()}`,
+      agreementFile,
+      visitFile,
+      loadedHourlyCost: hourlyCost,
+      targetMargin,
+      results,
+    });
+    setSavedMessage(`Saved ${saved.results.length} agreements to this browser.`);
   }
 
   const valid = results.filter(r => r.annualPrice > 0 && r.visitCount > 0);
@@ -56,7 +72,8 @@ export default function HistoryPage() {
         <article><span>Needs match review</span><strong>{summary.unmatched}</strong></article>
       </section>
       <section className="panel">
-        <div className="panelHead"><div><h2>Trailing 12-month agreement profitability</h2><p>Agreement ID matches are preferred. Customer-name matches are used only when no ID match exists.</p></div></div>
+        <div className="panelHead"><div><h2>Trailing 12-month agreement profitability</h2><p>Agreement ID matches are preferred. Customer-name matches are used only when no ID match exists.</p></div><div><button onClick={saveScan}>Save scan</button> <Link className="button secondaryButton" href="/scans">Saved scans</Link></div></div>
+        {savedMessage && <p style={{padding:'0 24px 16px', color:'#27704a'}}>{savedMessage}</p>}
         <div className="table importTable">
           <div className="tableHead"><strong>Agreement</strong><strong>Visits</strong><strong>Actual cost</strong><strong>Margin</strong><strong>Suggested renewal</strong></div>
           {results.map(r => <div className="tableRow" key={r.id}>
