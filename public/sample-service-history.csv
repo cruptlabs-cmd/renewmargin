@@ -1,0 +1,11 @@
+agreement_id,customer,service_date,labor_hours,material_cost,visit_overhead
+RM-1001,Johnson Residence,2026-03-12,1.4,18,10
+RM-1001,Johnson Residence,2026-08-22,1.5,24,10
+RM-1002,Martinez Residence,2026-02-07,0.9,12,10
+RM-1002,Martinez Residence,2026-07-19,1.1,18,10
+RM-1003,Pine Street Dental,2026-01-16,2.6,70,18
+RM-1003,Pine Street Dental,2026-06-14,2.9,78,18
+RM-1004,Oak Ridge Offices,2026-02-28,3.3,78,22
+RM-1004,Oak Ridge Offices,2026-08-05,3.8,84,22
+RM-1005,Thompson Residence,2026-04-02,0.8,14,10
+RM-1005,Thompson Residence,2026-09-01,1.0,17,10
