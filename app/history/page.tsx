@@ -41,6 +41,23 @@ export default function HistoryPage() {
     setSavedMessage(`Saved ${saved.results.length} agreements to this browser.`);
   }
 
+  function exportResults() {
+    if (!results.length) return;
+    const esc = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
+    const rows = [
+      ['agreement_id','customer','renewal_date','visits','actual_cost','gross_margin_percent','recommended_price','annual_recovery','confidence','matched_by'],
+      ...results.map(r => [r.id,r.customer,r.renewalDate,r.visitCount,r.actualCost.toFixed(2),r.grossMargin.toFixed(1),r.recommendedPrice.toFixed(2),r.annualUpside.toFixed(2),r.confidence,r.matchedBy]),
+    ];
+    const csv = rows.map(row => row.map(esc).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'renewmargin-repricing-results.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const valid = results.filter(r => r.annualPrice > 0 && r.visitCount > 0);
   const summary = {
     matched: valid.length,
@@ -54,6 +71,7 @@ export default function HistoryPage() {
     <div className="eyebrow">ACTUAL SERVICE HISTORY</div>
     <h1>Price renewals from completed work.</h1>
     <p className="sub">Import your agreement book and completed service visits separately. RenewMargin matches the last 12 months of work and calculates what each agreement should renew for.</p>
+    <p className="sub"><strong>Testing RenewMargin?</strong> Download the <a href="/sample-agreements.csv" download>sample agreement book</a> and <a href="/sample-service-history.csv" download>sample service history</a>, then upload both below.</p>
 
     <section className="panel importPanel">
       <label className="drop"><strong>{agreementFile || '1. Agreement book CSV'}</strong><span>Recommended: agreement_id, customer, current_price, renewal_date</span><input type="file" accept=".csv,text/csv" onChange={e => load(e.target.files?.[0], setAgreements, setAgreementFile)} /></label>
@@ -72,7 +90,7 @@ export default function HistoryPage() {
         <article><span>Needs match review</span><strong>{summary.unmatched}</strong></article>
       </section>
       <section className="panel">
-        <div className="panelHead"><div><h2>Trailing 12-month agreement profitability</h2><p>Agreement ID matches are preferred. Customer-name matches are used only when no ID match exists.</p></div><div><button onClick={saveScan}>Save scan</button> <Link className="button secondaryButton" href="/scans">Saved scans</Link></div></div>
+        <div className="panelHead"><div><h2>Trailing 12-month agreement profitability</h2><p>Agreement ID matches are preferred. Customer-name matches are used only when no ID match exists.</p></div><div><button onClick={saveScan}>Save scan</button> <button className="secondary" onClick={exportResults}>Export CSV</button> <Link className="button secondary" href="/scans">Saved scans</Link></div></div>
         {savedMessage && <p style={{padding:'0 24px 16px', color:'#27704a'}}>{savedMessage}</p>}
         <div className="table importTable">
           <div className="tableHead"><strong>Agreement</strong><strong>Visits</strong><strong>Actual cost</strong><strong>Margin</strong><strong>Suggested renewal</strong></div>
