@@ -13,9 +13,10 @@ export default function Home() {
         <h1>Find the maintenance agreements quietly losing you money.</h1>
         <p>Upload your agreement book and completed service history. RenewMargin calculates the real cost of each plan and shows what it should renew for before another year of underpriced visits.</p>
       </div>
-      <Link className="button" href="/history">Run a free Margin Leak Scan</Link>
+      <Link className="button primaryCta" href="/history">Run a free Margin Leak Scan</Link>
     </header>
 
+    <div className="demoNote">Example results from a 5-agreement sample portfolio</div>
     <section className="metrics">
       <article><span>Potential annual margin recovery</span><strong>{money.format(report.potentialUpside)}</strong></article>
       <article><span>Agreements needing repricing</span><strong>{report.needsRepricing}</strong></article>
