@@ -1,7 +1,0 @@
-agreement_id,customer,service_date,labor_hours,material_cost,visit_overhead
-AGR-1001,Smith Residence,2026-08-14,1.5,42.50,18.00
-AGR-1001,Smith Residence,2026-04-02,2.0,86.25,18.00
-AGR-1002,Garcia Residence,2026-07-21,3.25,174.80,22.00
-AGR-1002,Garcia Residence,2026-02-10,1.75,63.40,22.00
-AGR-1003,Johnson Residence,2026-06-18,1.0,28.95,16.00
-AGR-1003,Johnson Residence,2025-11-07,2.5,119.50,16.00
