@@ -1,14 +1,17 @@
 export type CsvRow = Record<string, string>;
 
 export function parseCsv(text: string): CsvRow[] {
+  // Excel and several field-service platforms export UTF-8 CSVs with a BOM.
+  // If it is left on the first header, agreement_id/customer matching silently fails.
+  const input = text.replace(/^\uFEFF/, "");
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";
   let quoted = false;
 
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    const next = text[i + 1];
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i];
+    const next = input[i + 1];
     if (char === '"' && quoted && next === '"') { field += '"'; i++; continue; }
     if (char === '"') { quoted = !quoted; continue; }
     if (char === ',' && !quoted) { row.push(field.trim()); field = ""; continue; }
