@@ -6,6 +6,8 @@ import { parseCsv, type CsvRow } from '../../lib/csv';
 import { analyzeAgreementHistory } from '../../lib/history';
 import { saveHistoryScan } from '../../lib/saved-scans';
 
+const foundingCustomerMailto = 'mailto:cruptlabs@gmail.com?subject=RenewMargin%20founding%20customer&body=I%27ve%20run%20a%20RenewMargin%20Margin%20Leak%20Scan%20and%20I%27m%20interested%20in%20the%20founding%20customer%20pilot.%20My%20HVAC%20company%20is%3A%20';
+
 export default function HistoryPage() {
   const [agreements, setAgreements] = useState<CsvRow[]>([]);
   const [visits, setVisits] = useState<CsvRow[]>([]);
@@ -102,6 +104,10 @@ export default function HistoryPage() {
             <strong>{r.visitCount ? `$${r.recommendedPrice.toFixed(0)}` : '—'}</strong>
           </div>)}
         </div>
+      </section>
+      <section className="callout">
+        <div><span className="eyebrow">FOUNDING CUSTOMER PILOT</span><h2>Want help turning these results into renewal pricing?</h2><p>Export your results, then contact RenewMargin to join the $99/month founding-customer pilot for up to 250 active agreements.</p></div>
+        <a className="button" href={foundingCustomerMailto}>Become a founding customer</a>
       </section>
     </>}
   </main>;
