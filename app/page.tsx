@@ -3,6 +3,7 @@ import { analyzePortfolio } from "@/lib/margin";
 import { demoAgreements } from "@/lib/demo-data";
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const foundingCustomerMailto = "mailto:cruptlabs@gmail.com?subject=RenewMargin%20founding%20customer&body=I%27m%20interested%20in%20the%20RenewMargin%20founding%20customer%20pilot.%20My%20HVAC%20company%20is%3A%20";
 
 export default function Home() {
   const report = analyzePortfolio(demoAgreements, 0.4);
@@ -50,7 +51,7 @@ export default function Home() {
         <h2>$99/month for up to 250 active agreements.</h2>
         <p>Run the scan first. If RenewMargin cannot show you meaningful margin leakage, do not buy it. Founding customers keep the $99/month plan while the product expands.</p>
       </div>
-      <Link className="button" href="/history">Start with the free scan</Link>
+      <div><Link className="button" href="/history">Start with the free scan</Link> <a className="button secondary" href={foundingCustomerMailto}>Become a founding customer</a></div>
     </section>
 
     <section className="callout">
