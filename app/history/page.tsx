@@ -7,6 +7,15 @@ import { analyzeAgreementHistory } from '../../lib/history';
 import { saveHistoryScan } from '../../lib/saved-scans';
 
 const foundingCustomerMailto = 'mailto:cruptlabs@gmail.com?subject=RenewMargin%20founding%20customer&body=I%27ve%20run%20a%20RenewMargin%20Margin%20Leak%20Scan%20and%20I%27m%20interested%20in%20the%20founding%20customer%20pilot.%20My%20HVAC%20company%20is%3A%20';
+const identityHeaders = ['agreement_id', 'agreementid', 'plan_id', 'membership_id', 'customer', 'customer_name', 'name'];
+const priceHeaders = ['current_price', 'annual_price', 'price', 'agreement_price'];
+const dateHeaders = ['date', 'service_date', 'completed_date', 'completed_at'];
+
+function hasHeader(rows: CsvRow[], aliases: string[]) {
+  if (!rows.length) return false;
+  const headers = Object.keys(rows[0]).map(h => h.trim().toLowerCase());
+  return aliases.some(alias => headers.includes(alias));
+}
 
 export default function HistoryPage() {
   const [agreements, setAgreements] = useState<CsvRow[]>([]);
@@ -16,6 +25,7 @@ export default function HistoryPage() {
   const [hourlyCost, setHourlyCost] = useState(52);
   const [targetMargin, setTargetMargin] = useState(40);
   const [savedMessage, setSavedMessage] = useState('');
+  const [importError, setImportError] = useState('');
 
   const results = useMemo(() => {
     if (!agreements.length || !visits.length) return [];
@@ -23,11 +33,29 @@ export default function HistoryPage() {
       .sort((a, b) => a.grossMargin - b.grossMargin);
   }, [agreements, visits, hourlyCost, targetMargin]);
 
-  async function load(file: File | undefined, setter: (rows: CsvRow[]) => void, nameSetter: (name: string) => void) {
+  async function load(file: File | undefined, kind: 'agreements' | 'visits') {
     if (!file) return;
-    setter(parseCsv(await file.text()));
-    nameSetter(file.name);
+    const rows = parseCsv(await file.text());
+    if (!rows.length) {
+      setImportError(`${file.name} has no readable CSV data rows. Check the file and try again.`);
+      return;
+    }
+    if (!hasHeader(rows, identityHeaders)) {
+      setImportError(`${file.name} needs an agreement ID or customer column so records can be matched.`);
+      return;
+    }
+    if (kind === 'agreements' && !hasHeader(rows, priceHeaders)) {
+      setImportError(`${file.name} needs a current price column (for example current_price or annual_price).`);
+      return;
+    }
+    if (kind === 'visits' && !hasHeader(rows, dateHeaders)) {
+      setImportError(`${file.name} needs a service/completed date column so the trailing 12 months can be calculated.`);
+      return;
+    }
+    setImportError('');
     setSavedMessage('');
+    if (kind === 'agreements') { setAgreements(rows); setAgreementFile(file.name); }
+    else { setVisits(rows); setVisitFile(file.name); }
   }
 
   function saveScan() {
@@ -76,8 +104,9 @@ export default function HistoryPage() {
     <p className="sub"><strong>Testing RenewMargin?</strong> Download the <a href="/sample-agreements.csv" download>sample agreement book</a> and <a href="/sample-service-history.csv" download>sample service history</a>, then upload both below.</p>
 
     <section className="panel importPanel">
-      <label className="drop"><strong>{agreementFile || '1. Agreement book CSV'}</strong><span>Recommended: agreement_id, customer, current_price, renewal_date</span><input type="file" accept=".csv,text/csv" onChange={e => load(e.target.files?.[0], setAgreements, setAgreementFile)} /></label>
-      <label className="drop"><strong>{visitFile || '2. Completed service visits CSV'}</strong><span>Recommended: agreement_id, customer, service_date, labor_hours, material_cost, visit_overhead</span><input type="file" accept=".csv,text/csv" onChange={e => load(e.target.files?.[0], setVisits, setVisitFile)} /></label>
+      <label className="drop"><strong>{agreementFile || '1. Agreement book CSV'}</strong><span>Recommended: agreement_id, customer, current_price, renewal_date</span><input type="file" accept=".csv,text/csv" onChange={e => load(e.target.files?.[0], 'agreements')} /></label>
+      <label className="drop"><strong>{visitFile || '2. Completed service visits CSV'}</strong><span>Recommended: agreement_id, customer, service_date, labor_hours, material_cost, visit_overhead</span><input type="file" accept=".csv,text/csv" onChange={e => load(e.target.files?.[0], 'visits')} /></label>
+      {importError && <p className="errorText" role="alert"><strong>Import problem:</strong> {importError}</p>}
       <div className="importControls">
         <label className="marginInput">Loaded technician cost <span>$<input type="number" min="0" value={hourlyCost} onChange={e => setHourlyCost(Math.max(0, Number(e.target.value)))} />/hr</span></label>
         <label className="marginInput">Target gross margin <span><input type="number" min="1" max="90" value={targetMargin} onChange={e => setTargetMargin(Math.min(90, Math.max(1, Number(e.target.value))))} />%</span></label>
