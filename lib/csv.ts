@@ -32,6 +32,8 @@ export function parseCsv(text: string): CsvRow[] {
 }
 
 export function numberValue(value: string | undefined, fallback = 0) {
-  const parsed = Number((value ?? "").replace(/[$,%]/g, ""));
+  // Currency exports commonly contain thousands separators (for example "$1,299.00").
+  // Leaving the comma makes Number() return NaN and can silently turn real prices/costs into zero.
+  const parsed = Number((value ?? "").replace(/[$,% ,]/g, ""));
   return Number.isFinite(parsed) ? parsed : fallback;
 }
