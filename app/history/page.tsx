@@ -33,22 +33,32 @@ export default function HistoryPage() {
       .sort((a, b) => a.grossMargin - b.grossMargin);
   }, [agreements, visits, hourlyCost, targetMargin]);
 
+  function clearImport(kind: 'agreements' | 'visits') {
+    if (kind === 'agreements') { setAgreements([]); setAgreementFile(''); }
+    else { setVisits([]); setVisitFile(''); }
+    setSavedMessage('');
+  }
+
   async function load(file: File | undefined, kind: 'agreements' | 'visits') {
     if (!file) return;
     const rows = parseCsv(await file.text());
     if (!rows.length) {
+      clearImport(kind);
       setImportError(`${file.name} has no readable CSV data rows. Check the file and try again.`);
       return;
     }
     if (!hasHeader(rows, identityHeaders)) {
+      clearImport(kind);
       setImportError(`${file.name} needs an agreement ID or customer column so records can be matched.`);
       return;
     }
     if (kind === 'agreements' && !hasHeader(rows, priceHeaders)) {
+      clearImport(kind);
       setImportError(`${file.name} needs a current price column (for example current_price or annual_price).`);
       return;
     }
     if (kind === 'visits' && !hasHeader(rows, dateHeaders)) {
+      clearImport(kind);
       setImportError(`${file.name} needs a service/completed date column so the trailing 12 months can be calculated.`);
       return;
     }
