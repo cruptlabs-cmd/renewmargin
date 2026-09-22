@@ -18,6 +18,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
+      - name: Domain regression checks
+        run: npm test
       - name: Typecheck
         run: npm run typecheck
       - name: Build
