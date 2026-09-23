@@ -18,7 +18,10 @@ function find(row: CsvRow, field: string) {
 
 function hasNumber(value: string) {
   if (!value) return false;
-  return Number.isFinite(Number(value.replace(/[$,%]/g, '')));
+  const raw = value.trim();
+  const normalized = raw.replace(/[()$,% ,]/g, '');
+  if (!normalized) return false;
+  return Number.isFinite(Number(normalized));
 }
 
 export type ScanResult = {
