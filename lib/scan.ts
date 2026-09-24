@@ -1,5 +1,5 @@
-import { analyzeAgreement } from './margin';
-import { numberValue, type CsvRow } from './csv';
+import { analyzeAgreement } from './margin.ts';
+import { numberValue, type CsvRow } from './csv.ts';
 
 const aliases: Record<string, string[]> = {
   customer: ['customer', 'customer_name', 'name'],
