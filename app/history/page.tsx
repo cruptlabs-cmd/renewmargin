@@ -68,6 +68,33 @@ export default function HistoryPage() {
     else { setVisits(rows); setVisitFile(file.name); }
   }
 
+  async function loadSamples() {
+    setImportError('');
+    setSavedMessage('');
+    try {
+      const [agreementResponse, visitResponse] = await Promise.all([
+        fetch('/sample-agreements.csv'),
+        fetch('/sample-service-history.csv'),
+      ]);
+      if (!agreementResponse.ok || !visitResponse.ok) throw new Error('Sample files could not be loaded.');
+      const [agreementRows, visitRows] = await Promise.all([
+        agreementResponse.text().then(parseCsv),
+        visitResponse.text().then(parseCsv),
+      ]);
+      if (!agreementRows.length || !visitRows.length) throw new Error('Sample files contain no readable data.');
+      setAgreements(agreementRows);
+      setVisits(visitRows);
+      setAgreementFile('sample-agreements.csv');
+      setVisitFile('sample-service-history.csv');
+    } catch {
+      setAgreements([]);
+      setVisits([]);
+      setAgreementFile('');
+      setVisitFile('');
+      setImportError('The sample data could not be loaded. Download the sample CSVs and upload them below.');
+    }
+  }
+
   function saveScan() {
     if (!results.length) return;
     const saved = saveHistoryScan({
@@ -111,7 +138,7 @@ export default function HistoryPage() {
     <div className="eyebrow">ACTUAL SERVICE HISTORY</div>
     <h1>Price renewals from completed work.</h1>
     <p className="sub">Import your agreement book and completed service visits separately. RenewMargin matches the last 12 months of work and calculates what each agreement should renew for.</p>
-    <p className="sub"><strong>Testing RenewMargin?</strong> Download the <a href="/sample-agreements.csv" download>sample agreement book</a> and <a href="/sample-service-history.csv" download>sample service history</a>, then upload both below.</p>
+    <p className="sub"><strong>Testing RenewMargin?</strong> <button className="secondary" onClick={loadSamples}>Load sample data instantly</button>, or download the <a href="/sample-agreements.csv" download>sample agreement book</a> and <a href="/sample-service-history.csv" download>sample service history</a> to test the upload flow.</p>
 
     <section className="panel importPanel">
       <label className="drop"><strong>{agreementFile || '1. Agreement book CSV'}</strong><span>Recommended: agreement_id, customer, current_price, renewal_date</span><input type="file" accept=".csv,text/csv" onChange={e => load(e.target.files?.[0], 'agreements')} /></label>
